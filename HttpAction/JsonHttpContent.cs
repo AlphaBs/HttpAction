@@ -6,24 +6,35 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace HttpAction
 {
-    public class JsonHttpContent : HttpContent
+    public class JsonHttpContent : StringContent
     {
+        private const string DefaultMediaType = "application/json";
+
         public JsonHttpContent(object obj)
+            : this(obj, null)
         {
 
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        public JsonHttpContent(object obj, Encoding encoding)
+            : this(obj, encoding, DefaultMediaType)
         {
-            context.
+
         }
 
-        protected override bool TryComputeLength(out long length)
+        public JsonHttpContent(object obj, Encoding encoding, string mediaType)
+            : base(serialize(obj), encoding, mediaType)
         {
-            throw new NotImplementedException();
+            
+        }
+
+        public static string serialize(object obj)
+        {
+            return JsonConvert.SerializeObject(obj);
         }
     }
 }
