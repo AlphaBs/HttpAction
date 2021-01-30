@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Net.Http.Headers;
 using System.Text;
 
-namespace MojangAPI.HttpAction
+namespace HttpAction
 {
-    public class HttpHeaderCollection
+    public class HttpHeaderCollection : IEnumerable<KeyValuePair<string, string>>
     {
         private Dictionary<string, List<string>> Headers = new Dictionary<string, List<string>>();
 
@@ -20,28 +22,21 @@ namespace MojangAPI.HttpAction
             }
         }
 
-        public string BuildQuery()
+        public void AddToHeader(HttpRequestHeaders header)
         {
-            return "?" + string.Join("&", this);
+            foreach (var item in this)
+            {
+                header.Add(item.Key, item.Value);
+            }
         }
 
-        public IEnumerator<string> GetEnumerator()
+        public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
         {
             foreach (var item in Headers)
             {
-                if (string.IsNullOrEmpty(item.Key))
+                foreach (var value in item.Value)
                 {
-                    foreach (var value in item.Value)
-                    {
-                        yield return HttpUtility.UrlEncode(value);
-                    }
-                }
-                else
-                {
-                    foreach (var value in item.Value)
-                    {
-                        yield return $"{HttpUtility.UrlEncode(item.Key)}={HttpUtility.UrlEncode(value)}";
-                    }
+                    yield return new KeyValuePair<string, string>(item.Key, value);
                 }
             }
         }

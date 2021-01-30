@@ -24,15 +24,23 @@ namespace HttpAction
             if (httpAction.RequestUri == null)
                 httpAction.RequestUri = httpAction.CreateUri();
 
-            httpAction.RequestHeaders.AddToHeader(httpAction.Headers);
+            if (httpAction.RequestHeaders != null)
+                httpAction.RequestHeaders.AddToHeader(httpAction.Headers);
 
             HttpResponseMessage response
                 = await client.SendAsync((HttpRequestMessage)httpAction, httpCompletionOption, cancellationToken);
-
+            
+            T result;
             if (response.IsSuccessStatusCode)
-                return await httpAction.ResponseHandler(response);
+                result = await httpAction.ResponseHandler(response);
             else
-                return await httpAction.ErrorHandler(response);
+                result = await httpAction.ErrorHandler(response);
+
+            ActionResponse actionResponse = result as ActionResponse;
+            if (actionResponse != null)
+                actionResponse.StatusCode = (int)response.StatusCode;
+
+            return result;
         }
     }
 }

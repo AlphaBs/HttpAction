@@ -15,15 +15,17 @@ namespace HttpAction
         public HttpHeaderCollection RequestHeaders { get; set; }
 
         public Func<HttpResponseMessage, Task<T>> ResponseHandler { get; set; }
+             = HttpResponseHandlers.GetJsonHandler<T>();
+
         public Func<HttpResponseMessage, Task<T>> ErrorHandler { get; set; }
+            = HttpResponseHandlers.GetDefaultErrorHandler<T>();
 
         public virtual Uri CreateUri()
         {
-            var u = new UriBuilder();
-            u.Host = this.Host;
-            u.Path = this.Path;
-            u.Query = this.Queries?.BuildQuery();
-            return u.Uri;
+            var ubuilder = new UriBuilder(this.Host);
+            ubuilder.Path = this.Path;
+            ubuilder.Query = this.Queries?.BuildQuery();
+            return ubuilder.Uri;
         }
     }
 }
