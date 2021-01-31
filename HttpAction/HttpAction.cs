@@ -15,10 +15,11 @@ namespace HttpAction
         public HttpHeaderCollection RequestHeaders { get; set; }
 
         public Func<HttpResponseMessage, Task<T>> ResponseHandler { get; set; }
-             = HttpResponseHandlers.GetJsonHandler<T>();
+            = HttpResponseHandlers.GetDefaultResponseHandler<T>();
 
-        public Func<HttpResponseMessage, Task<T>> ErrorHandler { get; set; }
-            = HttpResponseHandlers.GetDefaultErrorHandler<T>();
+        public Func<HttpResponseMessage, HttpAction<T>, Exception, Task<T>> ErrorHandler { get; set; }
+        //  = HttpResponseHandlers.GetDefaultErrorHandler<T>();
+            = null;
 
         public virtual Uri CreateUri()
         {
