@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+#nullable disable
+
 namespace HttpAction
 {
     public class HttpResponseHandlers
@@ -29,8 +31,7 @@ namespace HttpAction
         public static Func<HttpResponseMessage, Task<bool>> GetSuccessCodeResponseHandler() =>
             (response) =>
             {
-                bool result = (int)response.StatusCode / 100 == 2;
-                return Task.FromResult(result);
+                return Task.FromResult(response.IsSuccessStatusCode);
             };
 
         public static Func<HttpResponseMessage, Task<bool>> GetSuccessCodeResponseHandler(int successCode) =>
@@ -58,20 +59,39 @@ namespace HttpAction
                 return response.Content.ReadAsStreamAsync();
             };
 
+        public static Func<HttpResponseMessage, Task<T>> GetSuccessCodeResponseHandler<T>(T returnObj) =>
+            (response) =>
+            {
+                if (response.IsSuccessStatusCode)
+                    return Task.FromResult(returnObj);
+                else
+                    throw new Exception();
+            };
+
+        public static Func<HttpResponseMessage, Exception, Task<T>> GetJsonErrorHandler<T>() =>
+            (response, ex) =>
+            GetJsonHandler<T>().Invoke(response);
+
         public static Func<HttpResponseMessage, Task<T>> GetJsonHandler<T>() =>
             async (response) =>
             {
                 string res = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrEmpty(res))
+                    res = "{}";
                 return JsonConvert.DeserializeObject<T>(res, new JsonSerializerSettings
                 {
                     NullValueHandling = NullValueHandling.Ignore
                 });
             };
 
-        public static Func<HttpResponseMessage, Task<T>> GetDefaultErrorHandler<T>() =>
-            (response) =>
+        public static Func<HttpResponseMessage, Exception, Task<T>> GetDefaultErrorHandler<T>() =>
+            (response, ex) =>
             {
-                response.EnsureSuccessStatusCode();
+                if (response != null)
+                    response.EnsureSuccessStatusCode();
+                if (ex != null)
+                    throw ex;
+
                 return Task.FromResult(default(T));
             };
 
@@ -84,6 +104,8 @@ namespace HttpAction
             async (response) =>
             {
                 string res = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrEmpty(res))
+                    res = "[]";
                 JArray jarr = JArray.Parse(res);
                 return jarr.Select(x => x.ToObject<T>(defaultSerializer)).ToArray();
             };

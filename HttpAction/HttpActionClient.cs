@@ -26,6 +26,13 @@ namespace HttpAction
                 if (httpAction.ResponseHandler == null)
                     throw new ArgumentNullException("httpAction.ResponseHandler");
 
+                if (httpAction.CheckValidation != null)
+                {
+                    string? valid = httpAction.CheckValidation(httpAction);
+                    if (!string.IsNullOrEmpty(valid))
+                        throw new ArgumentException("Invalid Request : " + valid);
+                }
+
                 if (httpAction.RequestUri == null)
                     httpAction.RequestUri = httpAction.CreateUri();
 
@@ -37,11 +44,23 @@ namespace HttpAction
 
                 T result;
                 if (response.IsSuccessStatusCode || httpAction.ErrorHandler == null)
-                    result = await httpAction.ResponseHandler(response);
+                {
+                    try
+                    {
+                        result = await httpAction.ResponseHandler(response);
+                    }
+                    catch (Exception e)
+                    {
+                        if (httpAction.ErrorHandler != null)
+                            result = await httpAction.ErrorHandler(response, e);
+                        else
+                            throw;
+                    }
+                }
                 else
-                    result = await httpAction.ErrorHandler(response, httpAction, null);
+                    result = await httpAction.ErrorHandler(response, null);
 
-                ActionResponse actionResponse = result as ActionResponse;
+                ActionResponse? actionResponse = result as ActionResponse;
                 if (actionResponse != null)
                     actionResponse.StatusCode = (int)response.StatusCode;
 
@@ -50,7 +69,7 @@ namespace HttpAction
             catch (Exception ex)
             {
                 if (httpAction.ErrorHandler != null)
-                    return await httpAction.ErrorHandler(null, httpAction, ex);
+                    return await httpAction.ErrorHandler(null, ex);
                 else
                     throw;
             }
